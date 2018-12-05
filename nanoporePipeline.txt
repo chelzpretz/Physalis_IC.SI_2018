@@ -16,6 +16,13 @@
 echo #PATH # This command will show everything in the root path
 export PATH=$PATH:MY/Path # To add to path 
 
+# Conda
+	# Environments matter... 
+
+conda info --envs # to look at environments
+source activate py27 # to activate environment 
+
+------
 # RESOURCES
 	# Physalis genome / Trascriptome : ftp://ftp.solgenomics.net/genomes/Physalis_pruinosa/
 ------------------------------------------------------------------------------------------
@@ -79,7 +86,7 @@ tophat -p 8 -o
 	# Manuel: http://bio-bwa.sourceforge.net/bwa.shtml
 
 ----------------
-# Canu -- Bettet with DNA
+# Canu -- Better with DNA
 # Website: https://github.com/marbl/canu
 
 # Practice
