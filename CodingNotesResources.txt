@@ -1,0 +1,73 @@
+# Coding Notes / Resources  
+
+# Overview of this document  
+ 	# Helpful Commands  
+	# Downloading and extracting reads  
+		# parallel multithreaded extraction with parallel compression to  
+		# gz  
+	# Transcriptome assembly (think about reference and de novo assembly)  
+		# Trinity  
+			# Different parameters 
+		# SoapDeNovo   
+		# Canu
+	# Genome Assembly  
+		# Masurca  	
+		
+-------------------------------------------------------------------------------------
+# HELPFUL COMMAMNDS
+# Log on to computer, then the right node, and cd into /scratch  
+	
+	# To use packages : /share/apps/  
+	
+	# Below are some ways to move information from local to cloud (or the other way around)  
+	rsync -aPz "source" "destination"  
+	scp "source" destination"  
+		# Example scp transcripts.fq ncgrp@10.177.9.16:"/path/to/file"  
+
+	# Copy
+		cp "file(s)" "destination (path)" 
+		
+-------------------------------------------------------------------------------------
+# DOWNLOADING READS  
+  
+/share/apps/sratoolkit.2.9.2-centos_linux64/bin/prefetch -O /scratch/ncbi/public SRX3997401.sra; #download read archive
+from https://www.ncbi.nlm.nih.gov/sra?term=SRP142654 
+	# Once sequences are downloaded that are in a .sra format. The next step would to be converting that to .fastq
+
+/share/apps/sratoolkit.2.9.2-centos_linux64/bin/fastq-dump --split-files --gzip SRX3997394.sra; # This function will convert .sra to .fastaq. There are similar functions to convert to .sam files.
+	# --split-files will separate the files corresponding to read number
+	# --gzip 		compress output using gzip. This is important when working with large files
+	# --O 			 This is the output directory. The default is the current working directory
+	# File can be bulk split
+
+# gZip Files
+/share/apps/sratoolkit.2.9.2-centos_linux64/bin/fastq-dump --split-files --gzip SRX3997{395..400}; #bulk download; this was taking a long time 
+
+--------
+# Below is an example of parallel computing 
+echo "394 395 396 397 398 399 400" | tr " " "\n" | parallel /share/apps/sratoolkit.2.9.2-centos_linux64/bin/fasterq-dump -e 7 --split-files -O /scratch/cpretz /scratch/cpretz/SRX3997{}.sra
+	# Note that this used fasterq-dump rather than fastq-dump
+	
+	
+-------------------------------------------------------------------------------------
+# TRANSCRIPTOME ASSEMBLY
+
+# TRINITY 
+
+# This is a test run to see all if the program was working.
+Trinity --seqType fq --left SRX3997394_1.fastq.gz,SRX3997396_1.fastq.gz \
+                     --right SRX3997394_2.fastq.gz,SRX3997396_2.fastq.gz \
+                     --trimmomatic --quality_trimming_params "ILLUMINACLIP:/share/apps/adapters/TruSeq3-PE-2.fa:2:40:15:1:FALSE LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:75" \
+                     --CPU 40 --max_memory 480G --SS_lib_type RF;
+
+# Now Aligning all of the different segments
+Trinity --seqType fq --left SRX3997394.sra_1.fastq.gz,SRX3997395.sra_1.fastq.gz,SRX3997396.sra_1.fastq.gz,SRX3997397.sra_1.fastq.gz,SRX3997398.sra_1.fastq.gz,SRX3997399.sra_1.fastq.gz\
+                     --right SRX3997394.sra_2.fastq.gz,SRX3997395.sra_2.fastq.gz,SRX3997396.sra_2.fastq.gz,SRX3997397.sra_2.fastq.gz,SRX3997398.sra_2.fastq.gz,SRX3997399.sra_2.fastq.gz\
+                     --trimmomatic --quality_trimming_params "ILLUMINACLIP:/share/apps/adapters/TruSeq3-PE-2.fa:2:40:15:1:FALSE LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:75" \
+                     --CPU 40 --max_memory 480G --SS_lib_type RF;
+-------------------------------------------------------------------------------------
+#GENOME 
+
+/share/apps/sratoolkit.2.9.2-centos_linux64/bin/fastq-dump --split-files --gzip SRX3997400; #download just the genome, since it times out sometimes
+
+

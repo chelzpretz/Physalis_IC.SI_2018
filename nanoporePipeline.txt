@@ -1,0 +1,103 @@
+# nanopore Data Notes
+
+# Overview 
+ 	# Items to review before starting 
+ 	# Quality Control
+ 	# Adaptors / Trimming
+ 	# Assembly 
+ 	
+----------------------------------------------------------------------------------------
+# ITEMS TO REVIEW
+
+# nanopore reference: https://community.nanoporetech.com/info_sheets/community-developed-data-a/v/dai_s1009_v1_revf_10oct2016
+
+# It is important that things are in the right path. If applications aren't in the root path, you can add it or you will need to call it from the path.
+
+echo #PATH # This command will show everything in the root path
+export PATH=$PATH:MY/Path # To add to path 
+
+# RESOURCES
+	# Physalis genome / Trascriptome : ftp://ftp.solgenomics.net/genomes/Physalis_pruinosa/
+------------------------------------------------------------------------------------------
+
+# ADAPTORS / TRIMMING
+
+# Porechop
+# Website: https://github.com/rrwick/Porechop 
+	# Note: The author is no longer updating the program as of Oct. 2018
+	
+# Installing this was a little troublesome. Below is the code that was used for the installation (there was several to choose from)
+git clone https://github.com/rrwick/Porechop.git
+cd Porechop
+make
+./porechop-runner.py -h
+
+# To demultiplex barcodes for a single file
+./porechop-runner.py -i input-file -b output_dir
+
+# This will demultiplex barcodes with a whole directory 
+./porechop-runner.py -i /Users/ncgrp/Desktop/Nov30Nanopore/fastq/pass -b outputMult_dir
+
+-----------------------
+# Results from Nov. 30th Run:
+
+Barcode  Reads   Bases       File           				Tissue          
+  BC01      4,810   3,688,633  outputMult_dir/BC01.fastq 	Leaf
+  BC02         35      32,105  outputMult_dir/BC02.fastq	corolla
+  BC03      1,562   1,465,006  outputMult_dir/BC03.fastq	fruit
+  BC04     41,858  36,205,635  outputMult_dir/BC04.fastq	DeNM13 style
+  BC05        103     110,664  outputMult_dir/BC05.fastq	Pphil style
+  BC06      2,466   1,837,464  outputMult_dir/BC06.fastq	CP44_3 style
+  BC07      1,466     980,153  outputMult_dir/BC07.fastq	CP47_3 Style
+  BC08      3,860   3,507,231  outputMult_dir/BC08.fastq	DeNM_14 Style
+  BC09        937     659,001  outputMult_dir/BC09.fastq	Pperu1 Sytle
+  none      1,801   1,483,025  outputMult_dir/none.fastq
+# There was low coverage on several samples. This could have been do the pooling since before all sample where around the same concretion.
+
+----------------------------------------------------------------------------------------
+# ASSEMBLY  
+	# Tophat
+	# Kallisto
+	# BWA
+	# Canu (not as relevant) 
+
+----------------
+# Tophat 
+	# This program is better for small reads, but right now I think all my reads are small reads...
+	# Tophat (alignment of reference genome) -> cufflinks (map RNA reads) -> cuffmerge (will create one single transcriptome annotation) -> cuffdiff (using a ref. genome quantifies difference)  -> cummeRbund (visualize)
+# Note: Installing this was a challenge since there are many different dependents  
+
+# Quantification without a reference
+tophat -p 8 -o 
+
+----------------
+# Kallisto
+	# Website: https://pachterlab.github.io/kallisto/about
+----------------
+# BWA 
+	# Install: https://sourceforge.net/projects/bio-bwa/files/
+	# Manuel: http://bio-bwa.sourceforge.net/bwa.shtml
+
+----------------
+# Canu -- Bettet with DNA
+# Website: https://github.com/marbl/canu
+
+# Practice
+curl -L -o oxford.fasta http://nanopore.s3.climb.ac.uk/MAP006-PCR-1_2D_pass.fasta
+
+./bin/canu \
+-p ecoli -d ecoli-oxford \
+ genomeSize=4.8m \
+ -nanopore-raw oxford.fasta
+
+----------------------------
+canu [-correct | -trim | -assemble | -trim-assemble] \
+  [-s <assembly-specifications-file>] \
+   -p <assembly-prefix> \
+   -d <assembly-directory> \
+   genomeSize=<number>[g|m|k] \
+   [other-options] \
+   [-pacbio-raw | -pacbio-corrected | -nanopore-raw | -nanopore-corrected] *fastq
+   
+ 
+   
