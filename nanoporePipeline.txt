@@ -16,12 +16,19 @@
 echo #PATH # This command will show everything in the root path
 export PATH=$PATH:MY/Path # To add to path 
 
-# Conda
+# Conda (to avoid tricky path requirements)
 	# Environments matter... 
-
 conda info --envs # to look at environments
 source activate py27 # to activate environment 
+	# Most programs are avaible to install in conda
+conda install desired.package # best to good desired package 
 
+
+install_name_tool -change libcrypto.1.0.0.dylib $/Users/ncgrp/anaconda2/lib/libcrypto.1.1.dylib
+sudo cp libssl.1.1.dylib libcrypto.1.1.dylib /usr/lib/ 
+sudo rm libssl.1.1.dylib libcrypto.1.1.dylib 
+sudo ln -s libssl.1.1.dylib libssl.dylib 
+sudo ln -s libssl.1.1.dylib libcrypto.dylib
 ------
 # RESOURCES
 	# Physalis genome / Trascriptome : ftp://ftp.solgenomics.net/genomes/Physalis_pruinosa/
@@ -80,13 +87,45 @@ tophat -p 8 -o
 ----------------
 # Kallisto
 	# Website: https://pachterlab.github.io/kallisto/about
+
+# I need to review more but this looks like it might be best for humans, also might be best for the hip computer kids :\
+
 ----------------
 # BWA 
 	# Install: https://sourceforge.net/projects/bio-bwa/files/
 	# Manuel: http://bio-bwa.sourceforge.net/bwa.shtml
 
+# This requires a reference genome / transcriptome 
+	# I started with adding the Physalis pruniosa genome
+bwa index /Users/ncgrp/Desktop/Physalis-pruinosa-genome_v1.fa 
+
+# Alignment of the genome
+bwa mem /Users/ncgrp/Desktop/Physalis-pruinosa-genome_v1.fa /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/BC01.fastq > /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30.sam 
+
+## Move to samtools 
+	# samtools didn't work in conda so I just downloaded the program directly to the computer
+
+# convert .sam to .bam
+samtools view -S -b /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30.sam > /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30.bam 
+samtools view /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30.bam | head
+
+samtools sort /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30.bam -o /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30_sorted.bam
+samtools view /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30_sorted.bam | head
+
+samtools view leafRNAnov30_sorted.bam | wc -l
+	# leafRNA total number of alignments:  12516
+
+# testing for "proper pairs"
+samtools view -F 0x2 leafRNAnov30_sorted.bam | wc -l # looks for not proper pairs 
+	# not proper pair: 12516 (all of them) 
+
+
+# View alignment
+	# I didn't get to this...
+samtools mpileup -uf /Users/ncgrp/Desktop/Physalis-pruinosa-genome_v1.fa | bcftools view -cg - > sample1.vcf
+
 ----------------
-# Canu -- Better with DNA
+# Canu -- Better with DNA (I will try other programs before I move on to this one) 
 # Website: https://github.com/marbl/canu
 
 # Practice
@@ -97,7 +136,7 @@ curl -L -o oxford.fasta http://nanopore.s3.climb.ac.uk/MAP006-PCR-1_2D_pass.fast
  genomeSize=4.8m \
  -nanopore-raw oxford.fasta
 
-----------------------------
+----
 canu [-correct | -trim | -assemble | -trim-assemble] \
   [-s <assembly-specifications-file>] \
    -p <assembly-prefix> \
@@ -106,5 +145,12 @@ canu [-correct | -trim | -assemble | -trim-assemble] \
    [other-options] \
    [-pacbio-raw | -pacbio-corrected | -nanopore-raw | -nanopore-corrected] *fastq
    
- 
+   
+   
+--------------------------
+Nolan code I can edit:
+# Comparing to genome
+samtools mpileup -uf ref.fa sample1.sorted.bam | bcftools view -cg - > sample1.vcf
+# comparing a bunch
+samtools mpileup -uf ref.fa sample*.sorted.bam| bcftools view -cg - > Allsamples.vcf
    
