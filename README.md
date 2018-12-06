@@ -12,3 +12,10 @@ self-incompatible individuals.
 
 ### Documents in this folder  
 1. Workflow of the project. 
+	This document outlines the flow of the project.
+2. CodingNotesResources. 
+	This include general coding notes and the replication of 2018 Physalis data.
+3. nanoporePipleine. 
+	This is pipeline with dealing with nanopore data. 
+
+
