@@ -29,9 +29,12 @@ sudo cp libssl.1.1.dylib libcrypto.1.1.dylib /usr/lib/
 sudo rm libssl.1.1.dylib libcrypto.1.1.dylib 
 sudo ln -s libssl.1.1.dylib libssl.dylib 
 sudo ln -s libssl.1.1.dylib libcrypto.dylib
+
 ------
 # RESOURCES
 	# Physalis genome / Trascriptome : ftp://ftp.solgenomics.net/genomes/Physalis_pruinosa/
+	# Annotated Pepper genome: http://peppersequence.genomics.cn/page/species/download.jsp
+	
 ------------------------------------------------------------------------------------------
 
 # ADAPTORS / TRIMMING
@@ -75,20 +78,10 @@ Barcode  Reads   Bases       File           				Tissue
 	# BWA
 	# Canu (not as relevant) 
 
-----------------
-# Tophat 
-	# This program is better for small reads, but right now I think all my reads are small reads...
-	# Tophat (alignment of reference genome) -> cufflinks (map RNA reads) -> cuffmerge (will create one single transcriptome annotation) -> cuffdiff (using a ref. genome quantifies difference)  -> cummeRbund (visualize)
-# Note: Installing this was a challenge since there are many different dependents  
-
-# Quantification without a reference
-tophat -p 8 -o 
-
-----------------
-# Kallisto
-	# Website: https://pachterlab.github.io/kallisto/about
-
-# I need to review more but this looks like it might be best for humans, also might be best for the hip computer kids :\
+---------------
+# Convert fastq to fasta 
+cat BC09.fastq | awk '{if(NR%4==1) {printf(">%s\n",substr($0,2));} else if(NR%4==2) print;}' > Pperu1RNAnov30.fasta
+	# Input file = BC09.fastq  output file = Pperu1RNAnov30.fasta
 
 ----------------
 # BWA 
@@ -122,7 +115,50 @@ samtools view -F 0x2 leafRNAnov30_sorted.bam | wc -l # looks for not proper pair
 
 # View alignment
 	# I didn't get to this...
-samtools mpileup -uf /Users/ncgrp/Desktop/Physalis-pruinosa-genome_v1.fa | bcftools view -cg - > sample1.vcf
+
+----------------
+# I decided it would be best to make it to an annotated genome. 
+bwa index Resources/5.v2.0_Zunla-1_genes_sequence.fa # index pepper gene 
+
+bwa index Resources/5.v2.0_Zunla-1_genes_sequence.fa
+bwa aln Resources/5.v2.0_Zunla-1_genes_sequence.fa BC04.fastq > DeNM_13Style.sai 
+bwa samse Resources/5.v2.0_Zunla-1_genes_sequence.fa DeNM_14Style.sai  BC04.fastq > DeNM_13Style.sam 
+
+-- # Move to terminal that can handle samtools
+samtools faidx Resources/5.v2.0_Zunla-1_genes_sequence.fa
+
+samtools view -S -b DeNM_13Style.sam > DeNM_13Style.bam 
+samtools sort DeNM_13Style.bam -o DeNM_13Style_sorted.bam 
+
+
+
+----------------
+# Tophat 
+	# This program is better for small reads, but right now I think all my reads are small reads...
+	# Tophat (alignment of reference genome) -> cufflinks (map RNA reads) -> cuffmerge (will create one single transcriptome annotation) -> cuffdiff (using a ref. genome quantifies difference)  -> cummeRbund (visualize)
+# Note: Installing this was a challenge since there are many different dependents  
+
+# Quantification without a reference
+tophat -p 8 -o 
+
+tophat2 -o leaf_THout -p 8 /Users/ncgrp/Desktop/Physalis-pruinosa-genome_v1.fa BC01.fastq 
+
+tophat -p4 -G Resources/Capsicum.annuum.L_Zunla-1_v2.0_cdna.gff -o tophat_results Resources/5.v2.0_Zunla-1_genes_sequence.fa.sa leaf_THout BC01.fastq
+
+cuffdiff Resources/C_annumm.gtf leaf.sam CP44_3Style.sam CP47_3Style.sam DeNM_13Style.sam DeNM_14Style.sam 
+
+---------------
+# Code to change .gff file to .gtf
+	# before I ran this code, I did change "mRNA" to "Transcript" in the document
+gffread -E Capsicum.annuum.L_Zunla-1_v2.0_cdna.gff -T -o C_annumm.gtf
+
+
+----------------
+# Kallisto
+	# Website: https://pachterlab.github.io/kallisto/about
+
+# I need to review more but this looks like it might be best for humans, also might be best for the hip computer kids :\
+
 
 ----------------
 # Canu -- Better with DNA (I will try other programs before I move on to this one) 
@@ -146,11 +182,6 @@ canu [-correct | -trim | -assemble | -trim-assemble] \
    [-pacbio-raw | -pacbio-corrected | -nanopore-raw | -nanopore-corrected] *fastq
    
    
-   
 --------------------------
-Nolan code I can edit:
-# Comparing to genome
-samtools mpileup -uf ref.fa sample1.sorted.bam | bcftools view -cg - > sample1.vcf
-# comparing a bunch
-samtools mpileup -uf ref.fa sample*.sorted.bam| bcftools view -cg - > Allsamples.vcf
-   
+## Scotty Power Analysis
+	# http://scotty.genetics.utah.edu/help.html#GeneratingPilotData    
