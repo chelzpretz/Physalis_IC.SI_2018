@@ -80,7 +80,7 @@ Barcode  Reads   Bases       File           				Tissue
 
 ---------------
 # Convert fastq to fasta 
-cat BC09.fastq | awk '{if(NR%4==1) {printf(">%s\n",substr($0,2));} else if(NR%4==2) print;}' > Pperu1RNAnov30.fasta
+cat BC03.fastq | awk '{if(NR%4==1) {printf(">%s\n",substr($0,2));} else if(NR%4==2) print;}' > fruit.fasta
 	# Input file = BC09.fastq  output file = Pperu1RNAnov30.fasta
 
 ----------------
@@ -159,16 +159,21 @@ gffread -E Capsicum.annuum.L_Zunla-1_v2.0_cdna.gff -T -o C_annumm.gtf
 # Convert fasta to wrapped files 
 awk '/^>/ {printf("\n%s\n",$0);next; } { printf("%s",$0);}  END {printf("\n");}' < file.fa > file_unwrapped.fa
 
+
 # Upload index file
 makeblastdb -in Resources/5.v2.0_Zunla-1_genes_sequence.fa -dbtype nucl -out MyCapRNA
 
 # running blast 
 blastn -db MyCapRNA -query DeNM13styleRNAnov30_unwrapped.fasta > DeNM13_query.hits
 
-blastn -db PprunRNA -query DeNM13styleRNAnov30_unwrapped.fasta > DeNM13_Pprun_query.hits
+blastn -db LongRNA -query DeNM13styleRNAnov30_unwrapped.fasta > DeNM13_Pprun_query.hits
 
-grep -v "#" DeNM13_query.hits | awk '{print $2}' > DeNM13_hit_IDs
 
+# pull out wanted id for hit genes 
+grep ">" ICnDeNM14.query.hits | awk '{print $2}' > DeNM13_ICgene_hit_IDs
+
+#pull the sequences corresponding to those hit IDs out of the transcriptome
+cat DeNM13_ICgene_hit_IDs | while read line; do grep -A 1 $line DeNM13_unwrapped.fasta >> DeNM13_hits_fasta; done
 
 
 ----------------
