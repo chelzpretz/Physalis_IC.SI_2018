@@ -49,25 +49,5 @@ echo "394 395 396 397 398 399 400" | tr " " "\n" | parallel /share/apps/sratoolk
 	# Note that this used fasterq-dump rather than fastq-dump
 	
 	
--------------------------------------------------------------------------------------
-# TRANSCRIPTOME ASSEMBLY
-
-# TRINITY 
-
-# This is a test run to see all if the program was working.
-Trinity --seqType fq --left SRX3997394_1.fastq.gz,SRX3997396_1.fastq.gz \
-                     --right SRX3997394_2.fastq.gz,SRX3997396_2.fastq.gz \
-                     --trimmomatic --quality_trimming_params "ILLUMINACLIP:/share/apps/adapters/TruSeq3-PE-2.fa:2:40:15:1:FALSE LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:75" \
-                     --CPU 40 --max_memory 480G --SS_lib_type RF;
-
-# Now Aligning all of the different segments
-Trinity --seqType fq --left SRX3997394.sra_1.fastq.gz,SRX3997395.sra_1.fastq.gz,SRX3997396.sra_1.fastq.gz,SRX3997397.sra_1.fastq.gz,SRX3997398.sra_1.fastq.gz,SRX3997399.sra_1.fastq.gz\
-                     --right SRX3997394.sra_2.fastq.gz,SRX3997395.sra_2.fastq.gz,SRX3997396.sra_2.fastq.gz,SRX3997397.sra_2.fastq.gz,SRX3997398.sra_2.fastq.gz,SRX3997399.sra_2.fastq.gz\
-                     --trimmomatic --quality_trimming_params "ILLUMINACLIP:/share/apps/adapters/TruSeq3-PE-2.fa:2:40:15:1:FALSE LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:75" \
-                     --CPU 40 --max_memory 480G --SS_lib_type RF;
--------------------------------------------------------------------------------------
-#GENOME 
-
-/share/apps/sratoolkit.2.9.2-centos_linux64/bin/fastq-dump --split-files --gzip SRX3997400; #download just the genome, since it times out sometimes
 
 

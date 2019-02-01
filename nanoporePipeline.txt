@@ -51,6 +51,7 @@ make
 
 # To demultiplex barcodes for a single file
 ./porechop-runner.py -i input-file -b output_dir
+	# Here you can edit the flags, above is just the default parameters with only one file
 
 # This will demultiplex barcodes with a whole directory 
 ./porechop-runner.py -i /Users/ncgrp/Desktop/Nov30Nanopore/fastq/pass -b outputMult_dir
@@ -69,13 +70,38 @@ Barcode  Reads   Bases       File           				Tissue
   BC08      3,860   3,507,231  outputMult_dir/BC08.fastq	DeNM_14 Style
   BC09        937     659,001  outputMult_dir/BC09.fastq	Pperu1 Sytle
   none      1,801   1,483,025  outputMult_dir/none.fastq
-# There was low coverage on several samples. This could have been do the pooling since before all sample where around the same concretion.
+# There was low coverage on several samples. This could have been do the pooling since before all sample where around the same concretion. 
+#Something to think about doing is applying more strict flags, ex. barcodes must be on both sides. 
+
+# Applying a stricter flag 
+porechop --require_two_barcodes --threads 16 -i mfp2d1.fastq.gz -b demplx; #remove adapters and demultiplex into directory 'demplx'
+-----------------------
+# Results from Nov. 30th Run with stricter guidelines:
+
+Barcode  Reads   Bases       File                    
+  BC01      3,658   2,829,357  demplx_strict/BC01.fastq
+  BC02         21      19,214  demplx_strict/BC02.fastq
+  BC03      1,116   1,064,275  demplx_strict/BC03.fastq
+  BC04     30,701  26,925,390  demplx_strict/BC04.fastq
+  BC05         74      75,426  demplx_strict/BC05.fastq
+  BC06      1,801   1,375,638  demplx_strict/BC06.fastq
+  BC07      1,084     722,835  demplx_strict/BC07.fastq
+  BC08      2,757   2,517,399  demplx_strict/BC08.fastq
+  BC09        603     425,329  demplx_strict/BC09.fastq
+  none     17,083  14,014,054  demplx_strict/none.fastq
 
 ----------------------------------------------------------------------------------------
-# ASSEMBLY  
+# ALIENMENT 
+	# Convert fastq to fasta 
+	# BLAST 
+	# BWA
+	# BBmap
+	# Trinity 
+
+------
+# Still a work in progress. 
 	# Tophat
 	# Kallisto
-	# BWA
 	# Canu (not as relevant) 
 
 ---------------
@@ -84,55 +110,313 @@ cat BC03.fastq | awk '{if(NR%4==1) {printf(">%s\n",substr($0,2));} else if(NR%4=
 	# Input file = BC09.fastq  output file = Pperu1RNAnov30.fasta
 
 ----------------
+# Blast
+	# Need to add more detail
+
+# Convert fasta to wrapped files 
+awk '/^>/ {printf("\n%s\n",$0);next; } { printf("%s",$0);}  END {printf("\n");}' < file.fa > file_unwrapped.fa
+
+
+# Upload index file 
+makeblastdb -in Resources/5.v2.0_Zunla-1_genes_sequence.fa -dbtype nucl -out MyCapRNA
+
+# running blast (using index file that was created)
+blastn -db MyCapRNA -query DeNM13styleRNAnov30_unwrapped.fasta > DeNM13_query.hits
+
+blastn -db LongRNA -query DeNM13styleRNAnov30_unwrapped.fasta > DeNM13_Pprun_query.hits
+
+
+# pull out wanted id for hit genes 
+grep ">" ICnDeNM14.query.hits | awk '{print $2}' > DeNM13_ICgene_hit_IDs
+
+#pull the sequences corresponding to those hit IDs out of the transcriptome
+cat DeNM13_ICgene_hit_IDs | while read line; do grep -A 1 $line DeNM13_unwrapped.fasta >> DeNM13_hits_fasta; done
+
+# Pull out the genes of the reference genome to see what it is.
+grep -A 1 "Capang12g002250" Capsicum.annuum.var.glabriusculum_Chiltepin_v2.0_CDS.UNWRAPPED.fasta 
+	# This was followed by blast -ing 
+
+
+----------------
 # BWA 
 	# Install: https://sourceforge.net/projects/bio-bwa/files/
 	# Manuel: http://bio-bwa.sourceforge.net/bwa.shtml
 
 # This requires a reference genome / transcriptome 
-	# I started with adding the Physalis pruniosa genome
+	# I started with adding the Physalis pruniosa genome, but this is not annotated
 bwa index /Users/ncgrp/Desktop/Physalis-pruinosa-genome_v1.fa 
-
-# Alignment of the genome
+	
+	# Alignment of the genome
 bwa mem /Users/ncgrp/Desktop/Physalis-pruinosa-genome_v1.fa /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/BC01.fastq > /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30.sam 
+	# mem might not be the right thing to use, since it will align sequences to multiple parts of the reference genome. 
 
-## Move to samtools 
-	# samtools didn't work in conda so I just downloaded the program directly to the computer
-
-# convert .sam to .bam
-samtools view -S -b /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30.sam > /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30.bam 
-samtools view /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30.bam | head
-
-samtools sort /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30.bam -o /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30_sorted.bam
-samtools view /Users/ncgrp/Desktop/Nov30Nanopore/DemultiplexedReads/leafRNAnov30_sorted.bam | head
-
-samtools view leafRNAnov30_sorted.bam | wc -l
-	# leafRNA total number of alignments:  12516
-
-# testing for "proper pairs"
-samtools view -F 0x2 leafRNAnov30_sorted.bam | wc -l # looks for not proper pairs 
-	# not proper pair: 12516 (all of them) 
-
-
-# View alignment
-	# I didn't get to this...
+	# Index the capsicum genome, since this has been annotated
+bwa index Capsicum.annuum.var.glabriusculum_Chiltepin_v2.0_CDS.fasta 
 
 ----------------
-# I decided it would be best to make it to an annotated genome. 
-bwa index Resources/5.v2.0_Zunla-1_genes_sequence.fa # index pepper gene 
+#use bwa mem to align reads for each barcode to reference separately, pipe to samtools sort, output is a .bam file
+for i in 1 2 3 4 5 6 7 8 9;
+  do bwa mem -x ont2d -t 16 Alignments/Capsicum.annuum.var.glabriusculum_Chiltepin_v2.0_CDS.fasta BC0"$i".fastq | \
+       samtools sort -@16 -o BC0"$i"_aln_Capsicum.ann.glab.bam -;
+  done;
+#or, output .sam files
+for i in 1 2 3 4 5 6 7 8 9;
+  do bwa mem -x ont2d -t 16 Alignments/Capsicum.annuum.var.glabriusculum_Chiltepin_v2.0_CDS.fasta BC0"$i".fastq | \
+       samtools sort -@16 -o BC0"$i"_aln_Capsicum.ann.glab.sam -;
+  done;
 
-bwa index Resources/5.v2.0_Zunla-1_genes_sequence.fa
-bwa aln Resources/5.v2.0_Zunla-1_genes_sequence.fa BC04.fastq > DeNM_13Style.sai 
-bwa samse Resources/5.v2.0_Zunla-1_genes_sequence.fa DeNM_14Style.sai  BC04.fastq > DeNM_13Style.sam 
+#print out alignment stats, inc. proportion of your sequences that aligned to target
+for i in 1 2 3 4 5 6 7 8 9;
+  do echo "BC0$i";
+    samtools flagstat BC0"$i"_aln_Capsicum.ann.glab.bam;
+    echo;
+  done;
 
--- # Move to terminal that can handle samtools
-samtools faidx Resources/5.v2.0_Zunla-1_genes_sequence.fa
+---------
+# Results 
 
-samtools view -S -b DeNM_13Style.sam > DeNM_13Style.bam 
-samtools sort DeNM_13Style.bam -o DeNM_13Style_sorted.bam 
+BC01
+4062 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+404 + 0 supplementary
+0 + 0 duplicates
+3476 + 0 mapped (85.57% : N/A)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (N/A : N/A)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (N/A : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+BC02
+23 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+2 + 0 supplementary
+0 + 0 duplicates
+20 + 0 mapped (86.96% : N/A)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (N/A : N/A)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (N/A : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+BC03
+1293 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+177 + 0 supplementary
+0 + 0 duplicates
+1126 + 0 mapped (87.08% : N/A)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (N/A : N/A)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (N/A : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+BC04
+35854 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+5153 + 0 supplementary
+0 + 0 duplicates
+27452 + 0 mapped (76.57% : N/A)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (N/A : N/A)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (N/A : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+BC05
+92 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+18 + 0 supplementary
+0 + 0 duplicates
+75 + 0 mapped (81.52% : N/A)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (N/A : N/A)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (N/A : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+BC06
+1952 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+151 + 0 supplementary
+0 + 0 duplicates
+1475 + 0 mapped (75.56% : N/A)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (N/A : N/A)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (N/A : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+BC07
+1162 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+78 + 0 supplementary
+0 + 0 duplicates
+760 + 0 mapped (65.40% : N/A)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (N/A : N/A)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (N/A : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+BC08
+3145 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+388 + 0 supplementary
+0 + 0 duplicates
+2443 + 0 mapped (77.68% : N/A)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (N/A : N/A)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (N/A : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+BC09
+688 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+85 + 0 supplementary
+0 + 0 duplicates
+533 + 0 mapped (77.47% : N/A)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (N/A : N/A)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (N/A : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+--------------
+#use samtools depth to calculate depth at each position
+#writes a tab-delimited output file with gene name from reference, position, depth
+echo "1 2 3 4 5 6 7 8 9" | tr " " "\n" | parallel "samtools depth -a BC0{}_aln_Capsicum.ann.glab.bam > BC0{}depthall.txt"; #include all sites in reference genome
+
+echo "1 2 3 4 5 6 7 8 9" | tr " " "\n" | parallel "samtools depth BC0{}_aln_Capsicum.ann.glab.bam > BC0{}depth.txt"; #include only sites with coverage
+
+
+------
+cut -d$'\t' -f1 BC01depth.txt | uniq; #print names of reference loci with at least one bp that aligns to your data
+grep '>' Alignments/Capsicum.annuum.var.glabriusculum_Chiltepin_v2.0_CDS.fasta | wc -l; #how many "genes" in the reference - 34476
+cut -d$'\t' -f1 BC01depth.txt | uniq | wc -l ; #print number of reference loci with at least one bp that aligns to your data (1636 of 34476)
+
+	# BC02: 17  
+	# BC03: 650
+	# BC04: 6010 
+	# BC05: 54
+	# BC06: 979
+	# BC07: 478
+	# BC08: 1296
+	# BC09: 362
+
+
+echo "1 2 3 4 5 6 7 8 9" | tr " " "\n" | parallel "cut -d$'\t' -f3 BC0{}depth.txt | sort -n | uniq -c > BC0{}_depth_hits.txt"; #distribution of depth across all sites (~10-5% of sites have read depth = 1)
+
+
+-----------------------------------------------------------------------------------------
+# bbmap
+
+/share/apps/bbmap/mapPacBio.sh ref=../Alignments/Capsicum.annuum.var.glabriusculum_Chiltepin_v2.0_CDS.fasta; #create a bbmap index for the reference genome
+cat ref/genome/1/summary.txt; #summary for indexing operation
+
+-------------------	
+	# Results
+#Summary
+#Generated on	Thu Dec 20 16:44:59 MST 2018
+#Version	5
+chroms	1
+bases	241564226
+defined	34694038
+undefined	206870188
+contigs	34480
+scaffolds	34474
+interpad	6000
+source	/scratch/cpretz/demplx_strict/Alignments/Capsicum.annuum.var.glabriusculum_Chiltepin_v2.0_CDS.fasta
+bytes	35991396
+last modified	1545342141000
+-------------------	
+
+cat ref/genome/1/info.txt; #Results: 
+#chrom	scaffolds	contigs	length	defined	undefined	startPad	stopPad
+1	34474	34480	241564226	34694038	206870188	10000	10000
+
+/share/apps/bbmap/mapPacBio.sh -Xmx12g in=../BC01.fastq.gz out=BC01bbmap.sam; #875 seconds to perform alignment on local
+-------------------	
+
+/share/apps/bbmap/mapPacBio.sh -Xmx480g in=../BC01.fastq ref=/scratch/cpretz/demplx_strict/Alignments/Capsicum.annuum.var.glabriusculum_Chiltepin_v2.0_CDS.fasta out=BC01bbmap.sam; #24.975 seconds to perform alignment, print out sam file
+
+# calculate depth and various other other coverage stats, basecov and covstats are most useful, former is depth per bp, latter depth per gene
+for i in 1 2 3 4 5 6 7 8 9;
+  do /share/apps/bbmap/mapPacBio.sh in=../BC0"$i".fastq ref=/scratch/cpretz/demplx_strict/Alignments/Capsicum.annuum.var.glabriusculum_Chiltepin_v2.0_CDS.fasta covstats=BC0"$i"covstats.txt basecov=BC0"$i"basecov.txt covhist=BC0"$i"covhist.txt bincov=BC0"$i"bincov.txt;
+  done;
+
+# pull out positions in which the physalis data matches the reference 
+for i in 1 2 3 4 5 6 7 8 9;
+do awk '{if ($5 > 0){print $0}}' BC0"$i"covstats.txt > BC0"$i"refCovOnly.txt;
+done;
+
+# figure out how many contigs the data lines up to
+for i in 1 2 3 4 5 6 7 8 9;
+do wc -l BC0"$i"refCovOnly.txt;
+done;
+
+#### Results
+586 	BC01refCovOnly.txt
+7 	BC02refCovOnly.txt
+216 	BC03refCovOnly.txt
+2274 	BC04refCovOnly.txt
+17 	BC05refCovOnly.txt
+252 	BC06refCovOnly.txt
+132 	BC07refCovOnly.txt
+435 	BC08refCovOnly.txt
+97 	BC09refCovOnly.txt
 
 
 
-----------------
+-------------------------------------------------------------------------------------
+# TRINITY 
+
+# This is a test run to see all if the program was working.
+Trinity --seqType fq --left SRX3997394_1.fastq.gz,SRX3997396_1.fastq.gz \
+                     --right SRX3997394_2.fastq.gz,SRX3997396_2.fastq.gz \
+                     --trimmomatic --quality_trimming_params "ILLUMINACLIP:/share/apps/adapters/TruSeq3-PE-2.fa:2:40:15:1:FALSE LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:75" \
+                     --CPU 40 --max_memory 480G --SS_lib_type RF;
+
+# Now Aligning all of the different segments
+/share/apps/trinityrnaseq/Trinity --seqType fq  --CPU 40 --max_memory 480G --SS_lib_type RF --left SRX3997394.sra_1.fastq.gz,SRX3997395.sra_1.fastq.gz,SRX3997396.sra_1.fastq.gz,SRX3997397.sra_1.fastq.gz,SRX3997398.sra_1.fastq.gz,SRX3997399.sra_1.fastq.gz\
+                     --right SRX3997394.sra_2.fastq.gz,SRX3997395.sra_2.fastq.gz,SRX3997396.sra_2.fastq.gz,SRX3997397.sra_2.fastq.gz,SRX3997398.sra_2.fastq.gz,SRX3997399.sra_2.fastq.gz\
+                     --trimmomatic --quality_trimming_params "ILLUMINACLIP:/share/apps/adapters/TruSeq3-PE-2.fa:2:40:15:1:FALSE LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:75";
+
+# the Butterfly function is used then processes the individual graphs in parallel, tracing the paths that reads and pairs of reads take within the graph, ultimately reporting full-length transcripts for alternatively spliced isoforms, and teasing apart transcripts that corresponds to paralogous genes.
+
+/share/apps/trinityrnaseq/Trinity --seqType fq --CPU 40 --max_memory 480G --SS_lib_type RF  --output trinity-out-Phys-2.1.19 --left SRX3997394.sra_1.fastq.gz.PwU.qtrim.fq, SRX3997395.sra_1.fastq.gz.PwU.qtrim.fq, SRX3997396.sra_1.fastq.gz.PwU.qtrim.fq, RX3997397.sra_1.fastq.gz.PwU.qtrim.fq, SRX3997398.sra_1.fastq.gz.PwU.qtrim.fq, SRX3997399.sra_1.fastq.gz.PwU.qtrim.fq --right SRX3997394.sra_2.fastq.gz.PwU.qtrim.fq, SRX3997395.sra_2.fastq.gz.PwU.qtrim.fq, SRX3997396.sra_2.fastq.gz.PwU.qtrim.fq, SRX3997397.sra_2.fastq.gz.PwU.qtrim.fq, SRX3997398.sra_2.fastq.gz.PwU.qtrim.fq, SRX3997399.sra_2.fastq.gz.PwU.qtrim.fq;   
+
+
+-------------------------------------------------------------------------------------
+
 # Tophat 
 	# This program is better for small reads, but right now I think all my reads are small reads...
 	# Tophat (alignment of reference genome) -> cufflinks (map RNA reads) -> cuffmerge (will create one single transcriptome annotation) -> cuffdiff (using a ref. genome quantifies difference)  -> cummeRbund (visualize)
@@ -152,28 +436,6 @@ cuffdiff Resources/C_annumm.gtf leaf.sam CP44_3Style.sam CP47_3Style.sam DeNM_13
 	# before I ran this code, I did change "mRNA" to "Transcript" in the document
 gffread -E Capsicum.annuum.L_Zunla-1_v2.0_cdna.gff -T -o C_annumm.gtf
 
-
-----------------
-# Blast
-
-# Convert fasta to wrapped files 
-awk '/^>/ {printf("\n%s\n",$0);next; } { printf("%s",$0);}  END {printf("\n");}' < file.fa > file_unwrapped.fa
-
-
-# Upload index file
-makeblastdb -in Resources/5.v2.0_Zunla-1_genes_sequence.fa -dbtype nucl -out MyCapRNA
-
-# running blast 
-blastn -db MyCapRNA -query DeNM13styleRNAnov30_unwrapped.fasta > DeNM13_query.hits
-
-blastn -db LongRNA -query DeNM13styleRNAnov30_unwrapped.fasta > DeNM13_Pprun_query.hits
-
-
-# pull out wanted id for hit genes 
-grep ">" ICnDeNM14.query.hits | awk '{print $2}' > DeNM13_ICgene_hit_IDs
-
-#pull the sequences corresponding to those hit IDs out of the transcriptome
-cat DeNM13_ICgene_hit_IDs | while read line; do grep -A 1 $line DeNM13_unwrapped.fasta >> DeNM13_hits_fasta; done
 
 
 ----------------
