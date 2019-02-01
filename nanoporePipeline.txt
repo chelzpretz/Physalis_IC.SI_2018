@@ -385,16 +385,27 @@ done;
 
 #### Results
 586 	BC01refCovOnly.txt
-7 	BC02refCovOnly.txt
+7 		BC02refCovOnly.txt
 216 	BC03refCovOnly.txt
 2274 	BC04refCovOnly.txt
-17 	BC05refCovOnly.txt
+17 		BC05refCovOnly.txt
 252 	BC06refCovOnly.txt
 132 	BC07refCovOnly.txt
 435 	BC08refCovOnly.txt
-97 	BC09refCovOnly.txt
+97 		BC09refCovOnly.txt
 
+# Pulling out a reference hit to blast with 
+grep -A 1 "Capang12g002250" Alignments/Capsicum.annuum.var.glabriusculum_Chiltepin_v2.0_CDS.UNWRAPPED.fasta 
 
+# make sequence files with aligned sequences 
+for i in 1 2 3 4 5 6 7 8 9;
+do samtools bam2fq BC0"$i"/BC0"$i"_aln_Capsicum.ann.glab.bam > BC0"$i"/BC0"$i".aligned.seq.fq; 
+done; 
+
+# Convert fastq to fasta 
+for i in 1 2 3 4 5 6 7 8 9;
+do cat BC0"$i"/BC0"$i".aligned.seq.fq | awk '{if(NR%4==1) {printf(">%s\n",substr($0,2));} else if(NR%4==2) print;}' > BC0"$i".aligned.seq.fasta;
+done;
 
 -------------------------------------------------------------------------------------
 # TRINITY 
