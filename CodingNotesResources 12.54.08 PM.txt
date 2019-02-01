@@ -5,13 +5,7 @@
 	# Downloading and extracting reads  
 		# parallel multithreaded extraction with parallel compression to  
 		# gz  
-	# Transcriptome assembly (think about reference and de novo assembly)  
-		# Trinity  
-			# Different parameters 
-		# SoapDeNovo   
-		# Canu
-	# Genome Assembly  
-		# Masurca  	
+
 		
 -------------------------------------------------------------------------------------
 # HELPFUL COMMAMNDS
@@ -48,6 +42,3 @@ from https://www.ncbi.nlm.nih.gov/sra?term=SRP142654
 echo "394 395 396 397 398 399 400" | tr " " "\n" | parallel /share/apps/sratoolkit.2.9.2-centos_linux64/bin/fasterq-dump -e 7 --split-files -O /scratch/cpretz /scratch/cpretz/SRX3997{}.sra
 	# Note that this used fasterq-dump rather than fastq-dump
 	
-	
-
-
