@@ -74,7 +74,7 @@ Barcode  Reads   Bases       File           				Tissue
 #Something to think about doing is applying more strict flags, ex. barcodes must be on both sides. 
 
 # Applying a stricter flag 
-porechop --require_two_barcodes --threads 16 -i mfp2d1.fastq.gz -b demplx; #remove adapters and demultiplex into directory 'demplx'
+porechop --require_two_barcodes --threads 16 -i input)_file -b demplx; #remove adapters and demultiplex into directory 'demplx'
 -----------------------
 # Results from Nov. 30th Run with stricter guidelines:
 
