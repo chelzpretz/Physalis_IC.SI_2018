@@ -19,7 +19,7 @@
 # Missing BC02 :/ This is only 50% of the reads and I should have double once this is done
 
 # Ran Stricter parameters for barcoding 
-./porechop-runner.py -require_two_barcodes --threads 16 -i ../Desktop/fastq_pass/ -b ../Desktop/PorechopReads20Nov2019Stict
+./porechop-runner.py --require_two_barcodes --threads 16 -i ../Desktop/fastq_pass/ -b ../Desktop/PorechopReads20Nov2019Stict
 
 #Barcode  Reads    Bases        File                                             
 #  BC01       5,275    2,391,323  ../Desktop/PorechopReads20Nov2019Stict/BC01.fastq
@@ -30,6 +30,34 @@
 #  BC11         463      113,236  ../Desktop/PorechopReads20Nov2019Stict/BC11.fastq
 #  BC12      77,634   24,783,933  ../Desktop/PorechopReads20Nov2019Stict/BC12.fastq
 #  none     213,756   88,851,593  ../Desktop/PorechopReads20Nov2019Stict/none.fastq
+
+------------------------------------------
+# Porechop results from all data Dec. 4th, 2019
+# Less stick results
+./porechop-runner.py -i ../Desktop/Nanopore_Pacu_Nov2019_Results/fastq_pass -b ../Desktop/PorechopReads5Dec2019
+
+# Results
+#Barcode  Reads      Bases        File                                       
+#  BC01        16,446    7,592,884  ../Desktop/PorechopReads5Dec2019/BC01.fastq
+#  BC03        46,682   21,797,700  ../Desktop/PorechopReads5Dec2019/BC03.fastq
+#  BC08        55,511   23,178,408  ../Desktop/PorechopReads5Dec2019/BC08.fastq
+#  BC09     1,427,933  709,257,040  ../Desktop/PorechopReads5Dec2019/BC09.fastq
+#  BC10           864      370,485  ../Desktop/PorechopReads5Dec2019/BC10.fastq
+#  BC11         1,650      604,860  ../Desktop/PorechopReads5Dec2019/BC11.fastq
+#  BC12       210,386   67,165,620  ../Desktop/PorechopReads5Dec2019/BC12.fastq
+#  none        46,954   17,981,596  ../Desktop/PorechopReads5Dec2019/none.fastq
+
+#2,238,458 / 2,258,425 reads had adapters trimmed from their start (220,555,572 bp removed)
+#2,212,201 / 2,258,425 reads had adapters trimmed from their end (146,097,172 bp removed)
+
+
+#Discarding reads containing middle adapters
+#2,258,425 / 2,258,425 (100.0%)
+
+#8,609 / 2,258,425 reads were discarded based on middle adapters
+
+# More strict
+./porechop-runner.py --require_two_barcodes --threads 16 -i ../Desktop/Nanopore_Pacu_Nov2019_Results/fastq_pass -b ../Desktop/PorechopReads5Dec2019Strict
 
 
 
